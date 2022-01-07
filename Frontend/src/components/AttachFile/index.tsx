@@ -2,9 +2,10 @@ import React, {useEffect} from 'react';
 
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
-import {useAxios} from '../../hooks/useAxios';
+import {TokenProps, useAxios} from '../../hooks/useAxios';
 
 import {Anexo} from '../../common/types';
+import axios from 'axios';
 import Delete from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -14,9 +15,10 @@ type AttachFileProps = {
   anexo: Anexo;
   taskId: number;
 }
+const item = window.localStorage.getItem('token');
+const tokenObj: TokenProps = JSON.parse(item!);
 
 type ResponseGetAttachedFile = Blob;
-type ResponseRemoveAttach = void;
 
 const AttachFile = (props:AttachFileProps) => {
   const { taskId, anexo } = props;
@@ -27,13 +29,6 @@ const AttachFile = (props:AttachFileProps) => {
     loading
   } = useAxios<ResponseGetAttachedFile>({
     method: 'GET',
-    path: `tarefas/${taskId}/anexos/${anexo.id}`
-  });
-
-  const {
-    commit: commitRemoveAttach,
-  } = useAxios<ResponseRemoveAttach>({
-    method: 'DELETE',
     path: `tarefas/${taskId}/anexos/${anexo.id}`
   });
 
@@ -50,21 +45,26 @@ const AttachFile = (props:AttachFileProps) => {
 
   const downloadAnexo = () => {
     commitDownloadAnexo(
-      undefined, 
-      undefined,
-      undefined,
-      'blob'
+        undefined,
+        undefined,
+        undefined,
+        'blob'
     );
   };
-
-  function reloadWindow()  {
-    window.location.reload()
-  }
-
-  const removerAnexo = () => {
-    commitRemoveAttach({}, reloadWindow);
+  const removerAnexo = async (taskId: number, anexo: Anexo) => {
+    axios
+        .delete(`http://localhost:8080/tarefas/${taskId}/anexos/${anexo.id}`, {
+          headers: {
+            Authorization: `Bearer ${tokenObj!.token}`
+          }
+        })
+        .then(response => {
+          window.location.reload();
+        })
+        .catch(error => {
+          console.log('Erro ao excluir anexo da tarefa', error);
+        })
   };
-
 
   return (
       <Stack direction='row' spacing={1}>
@@ -73,7 +73,7 @@ const AttachFile = (props:AttachFileProps) => {
           <Tooltip title={`Excluir Anexo`}>
             <IconButton edge="end" aria-label="Excluir Anexo" onClick={(e) => {
               e.stopPropagation();
-              removerAnexo();}
+              removerAnexo(taskId, anexo);}
             }>
               <Delete />
             </IconButton>
