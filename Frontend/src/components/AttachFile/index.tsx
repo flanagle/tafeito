@@ -5,6 +5,10 @@ import ListItemText from '@mui/material/ListItemText';
 import {useAxios} from '../../hooks/useAxios';
 
 import {Anexo} from '../../common/types';
+import Delete from '@mui/icons-material/Delete';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import Stack from '@mui/material/Stack';
 
 type AttachFileProps = {
   anexo: Anexo;
@@ -12,6 +16,7 @@ type AttachFileProps = {
 }
 
 type ResponseGetAttachedFile = Blob;
+type ResponseRemoveAttach = void;
 
 const AttachFile = (props:AttachFileProps) => {
   const { taskId, anexo } = props;
@@ -22,6 +27,13 @@ const AttachFile = (props:AttachFileProps) => {
     loading
   } = useAxios<ResponseGetAttachedFile>({
     method: 'GET',
+    path: `tarefas/${taskId}/anexos/${anexo.id}`
+  });
+
+  const {
+    commit: commitRemoveAttach,
+  } = useAxios<ResponseRemoveAttach>({
+    method: 'DELETE',
     path: `tarefas/${taskId}/anexos/${anexo.id}`
   });
 
@@ -45,10 +57,29 @@ const AttachFile = (props:AttachFileProps) => {
     );
   };
 
+  function reloadWindow()  {
+    window.location.reload()
+  }
+
+  const removerAnexo = () => {
+    commitRemoveAttach({}, reloadWindow);
+  };
+
+
   return (
-    <ListItemButton sx={{ pl: 4 }} onClick={() => {downloadAnexo()}}>
-      <ListItemText primary={anexo.nome} />
-    </ListItemButton>
+      <Stack direction='row' spacing={1}>
+        <ListItemButton sx={{ pl: 4 }} onClick={() => {downloadAnexo()}}>
+          <ListItemText primary={anexo.nome} />
+          <Tooltip title={`Excluir Anexo`}>
+            <IconButton edge="end" aria-label="Excluir Anexo" onClick={(e) => {
+              e.stopPropagation();
+              removerAnexo();}
+            }>
+              <Delete />
+            </IconButton>
+          </Tooltip>
+        </ListItemButton>
+      </Stack>
   )
 }
 
